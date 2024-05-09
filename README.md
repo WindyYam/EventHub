@@ -42,3 +42,7 @@ enum definition
 The value of the Event_t (which is uint8_t) can be an extra data to your processing
 
 Use ActionScheduler for queue and get rid of ISR context, which means you can send event from ISR context as well
+
+The whole idea of events is to decouple your modules, so that if you want a button event from button module to trigger
+Led module behaviour(without registering onPress callback stuff from the button module, because it is complicated in code, and has ISR context issue), 
+the EventHub is the most natural way(at the cost of dependency on EventHub), so button module and Led module don't need to know the others' existence

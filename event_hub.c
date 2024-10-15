@@ -14,7 +14,7 @@ void EventHub_SendEvent(Event_t const* event)
     ActionScheduler_Schedule(0, processTask, (void *)event);
 }
 
-void EventHub_SendEventExtra(Event_t* event, uint8_t extra)
+void EventHub_SendEventExtra(Event_t* event, uint32_t extra)
 {
     *event = extra;
     ActionScheduler_Schedule(0, processTask, (void *)event);

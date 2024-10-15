@@ -9,7 +9,7 @@ extern "C" {
 #include "action_scheduler.h"
 #include <string.h>
 
-typedef uint8_t Event_t;
+typedef uint32_t Event_t;
 
 #ifndef DEBUG_PRINTF
 #define DEBUG_PRINTF(fmt, ...)
@@ -34,7 +34,7 @@ typedef uint8_t Event_t;
 }
 
 void EventHub_SendEvent(Event_t const* event);
-void EventHub_SendEventExtra(Event_t* event, uint8_t extra);
+void EventHub_SendEventExtra(Event_t* event, uint32_t extra);
 // weak callback, implement it in user code
 void EventHub_Process(Event_t const* event);
 

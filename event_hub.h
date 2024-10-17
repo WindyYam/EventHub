@@ -21,8 +21,8 @@ typedef uint32_t Event_t;
 
 #define EVENT_MATCH(evt, val) (&evt == val)
 // These 2 macros are preferred way of sending event. 
-// The event is indeed the unique address of the uint8_t as unique identifier
-// The value of uint8_t can act as extra data for the event message
+// The event is indeed the unique address of the uint32_t as unique identifier
+// The value of uint32_t can act as extra data(e.g. a pointer) for the event message
 // Sending event is safe from ISR as well
 #define SEND_EVENT(evt) { \
     DEBUG_PRINTF("Event %s\n", #evt); \

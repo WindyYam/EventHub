@@ -19,6 +19,8 @@ SEND_EVENT_EXT(yourEventName2, 123);
 Then, somewhere in your user code, you should implement this weak function to overwrite the default one:
 
 ```
+#include "event.h"
+
 void EventHub_Process(Event_t const* event)
 {
 	if(EVENT_MATCH(yourEventName1, event))
@@ -27,14 +29,14 @@ void EventHub_Process(Event_t const* event)
 	}
 	else if(EVENT_MATCH(yourEventName2, event))
 	{
-		uint8_t extra = *event;
+		uint8_t extra = EVENT_VALUE(event);
 		//...
 	}
 }
 ```
 
 And then, run generate_events_h.py from the root of your source file, which will generate a events.h header file
-containing all the events as extern variables.
+containing all the events as extern variables. Suggest to integrate the .py script into your build system.
 
 The general idea is to use the memory address of each Event_t variable as the unique identifier, so to get rid of
 enum definition

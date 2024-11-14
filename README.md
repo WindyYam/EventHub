@@ -3,45 +3,47 @@ A simple implementation of event processing aim at embedded system
 
 You need ActionScheduler module as well, see https://github.com/WindyYam/ActionScheduler
 
-To use it, in your source files, include the header, and declare:
+To use it, in your source files, include the header `event_hub.h`, and declare:
 
 ```
-Event_t yourEventName1;
-Event_t yourEventName2;
+DEFINE_EVENT(your_event1)
+DEFINE_EVENT(your_event2)
 ```
 
 Send the event from your code in this form
 ```
-SEND_EVENT(yourEventName1);
-SEND_EVENT_EXT(yourEventName2, 123);
+SEND_EVENT(your_event1);
+SEND_EVENT(your_event2);
 ```
 
 Then, somewhere in your user code, you should implement this weak function to overwrite the default one:
 
 ```
-#include "event.h"
+#include "event_hub.h"
 
-void EventHub_Process(Event_t const* event)
+void EventHub_Process(Event_t event)
 {
-	if(EVENT_MATCH(yourEventName1, event))
-	{
-		//...
-	}
-	else if(EVENT_MATCH(yourEventName2, event))
-	{
-		uint8_t extra = EVENT_VALUE(event);
-		//...
-	}
+    switch(event)
+    {
+        case your_event1:
+        {
+            // Do something for your event
+        }
+        break;
+        case your_event2:
+        {
+            // Do something for your event
+        }
+        break;
+		default:
+			// Log unknown event
+		break;
+    }
 }
 ```
 
 And then, run generate_events_h.py from the root of your source file, which will generate a events.h header file
-containing all the events as extern variables. Suggest to integrate the .py script into your build system.
-
-The general idea is to use the memory address of each Event_t variable as the unique identifier, so to get rid of
-enum definition
-
-The value of the Event_t (which is uint8_t) can be an extra data to your processing
+containing all the events as enum. Suggest to integrate the .py script into your build system.
 
 Use ActionScheduler for queue and get rid of ISR context, which means you can send event from ISR context as well
 

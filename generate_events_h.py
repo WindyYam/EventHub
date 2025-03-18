@@ -1,5 +1,5 @@
 # To use this script, you should declare all events in your source file in this form:
-# DEFINE_EVENT(your_event1)
+# DEFINE_EVENT(your_event1) // You might have some comments for readability
 # DEFINE_EVENT(your_event2)
 # DEFINE_EVENT(your_event3)
 # then, execute this script from the root of your source files(that contains DEFINE_EVENT)
@@ -9,8 +9,8 @@ import os
 import re
 import sys
 
-def find_event_names(directory):
-    event_names = []
+def find_event_names_with_comments(directory):
+    event_dict = {}  # Will store event_name -> comment
     for root, _, files in os.walk(directory):
         for file in files:
             if file.endswith((".c")):
@@ -18,16 +18,27 @@ def find_event_names(directory):
                 try:
                     with open(file_path, "r", errors='ignore') as f:
                         content = f.read()
-                        # Use a simple regex to find DEFINE_EVENT macros
-                        matches = re.findall(r"DEFINE_EVENT\((\w+)\)", content)
-                        if matches:
-                            event_names.extend(matches)
+                        # Match DEFINE_EVENT followed by optional comment
+                        matches = re.findall(r"DEFINE_EVENT\((\w+)\)(.*?)(?:\n|$)", content)
+                        for match in matches:
+                            event_name = match[0]
+                            comment_part = match[1].strip()
+                            
+                            # Extract comment if it exists
+                            comment = ""
+                            if comment_part.startswith("//"):
+                                comment = comment_part[2:].strip()
+                            elif comment_part.startswith("/*") and "*/" in comment_part:
+                                comment = comment_part[2:comment_part.find("*/")].strip()
+                                
+                            # Store event with its comment (empty string if no comment)
+                            event_dict[event_name] = comment
                 except Exception as e:
                     print(f"Warning: Could not read file {file_path}: {e}")
     
-    if not event_names:
+    if not event_dict:
         print("WARNING: No DEFINE_EVENT macros found. Check your source files.")
-    return event_names
+    return event_dict
 
 def find_handled_events(directory):
     handled_events = []
@@ -72,10 +83,10 @@ def find_handled_events(directory):
     
     return handled_events
 
-def write_to_events_file(event_names, script_dir):
+def write_to_events_file(event_dict, script_dir):
     events_file = os.path.join(script_dir, "events.h")
     
-    if not event_names:
+    if not event_dict:
         print(f"ERROR: No events found. Not generating {events_file}")
         return
     
@@ -85,18 +96,27 @@ def write_to_events_file(event_names, script_dir):
         f.write("#ifndef EVENTS_H\n")
         f.write("#define EVENTS_H\n\n")
         f.write("typedef enum {\n")
-        sorted_event_names = sorted(set(event_names))  # Sort the event names
+        
+        # Sort event names for consistent output
+        sorted_event_names = sorted(event_dict.keys())
+        
         for event_name in sorted_event_names:
-            line = f"    {event_name},\n"
+            comment = event_dict[event_name]
+            if comment:
+                # If there's a comment, include it
+                line = f"    {event_name},  /* {comment} */\n"
+            else:
+                line = f"    {event_name},\n"
             f.write(line)
+            
         f.write("} Event_t;\n\n")
         f.write("#endif // EVENTS_H\n")
     
     print(f"Generated {events_file} with {len(sorted_event_names)} events")
 
-def generate_event_statistics(event_names, handled_events, script_dir):
+def generate_event_statistics(event_dict, handled_events, script_dir):
     # Convert to sets for easier processing
-    all_events = set(event_names)
+    all_events = set(event_dict.keys())
     handled = set(handled_events)
     
     # Find unhandled events
@@ -122,7 +142,11 @@ def generate_event_statistics(event_names, handled_events, script_dir):
             f.write("=== Unhandled Events ===\n")
             f.write("The following events are defined but not handled in the EventHub_Process function:\n")
             for event in sorted(unhandled):
-                f.write(f"- {event}\n")
+                comment = event_dict[event]
+                event_info = f"- {event}"
+                if comment:
+                    event_info += f" ({comment})"
+                f.write(f"{event_info}\n")
             f.write("\n")
         else:
             f.write("All defined events are handled in the EventHub_Process function.\n\n")
@@ -174,10 +198,10 @@ if __name__ == "__main__":
     
     print(f"Scanning directory: {directory}")
     
-    # Find all defined events
+    # Find all defined events with their comments
     print("\nLooking for defined events...")
-    event_names = find_event_names(directory)
-    print(f"Found {len(set(event_names))} unique defined events")
+    event_dict = find_event_names_with_comments(directory)
+    print(f"Found {len(event_dict)} unique defined events")
     
     # Find all handled events
     print("\nLooking for handled events in EventHub_Process...")
@@ -185,11 +209,11 @@ if __name__ == "__main__":
     print(f"Found {len(set(handled_events))} unique handled events")
     
     # Generate the header file
-    write_to_events_file(set(event_names), directory)
+    write_to_events_file(event_dict, directory)
     
     # Generate statistics
     all_events, handled, unhandled, undefined_handled = generate_event_statistics(
-        event_names, handled_events, directory
+        event_dict, handled_events, directory
     )
     
     # Print summary to console
